@@ -547,35 +547,50 @@
     ctx.fillStyle = "#191923";
     ctx.fillRect(0, 0, W, H);
 
-    text("あそびかた", 400, 34, 38, "#ffdc46", true);
+    text("あそびかた", 400, 32, 36, "#ffdc46", true);
 
-    text("基本ルール", 22, 80, 22, "#ffdc46", false);
+    // 左：ルールと画面の見方
+    text("基本ルール", 22, 72, 21, "#ffdc46", false);
     const rules = [
-      "① ユニットボタンで種類を選ぶ",
-      "② 左側2列の青い場所で召喚",
-      "③ 自分のユニットをクリックして選択",
-      "④ 緑のマスへ移動できる",
-      "⑤ 赤いマスの敵を攻撃できる",
-      "⑥ END TURNで敵のターンへ",
-      "⑦ 敵の城HPを0にすれば勝利！",
+      "① ユニットを選んで、左側2列の青い場所に召喚",
+      "② 自分のユニットをクリックして選択",
+      "③ 緑のマス＝移動できる場所",
+      "④ 赤いマス＋◆＝攻撃できる対象",
+      "⑤ 1体につき、移動1回・攻撃1回まで",
+      "⑥ ターン終了で敵が自動で行動",
+      "⑦ 敵の城HPを0にすると勝利！",
     ];
-    rules.forEach((r, i) => text(r, 22, 110 + i * 28, 15, "#eeeeef", false));
+    rules.forEach((r, i) => text(r, 22, 99 + i * 23, 13, "#eeeeef", false));
 
-    const notes = [
-      "HP＝体力",
-      "攻撃＝1回のダメージ",
-      "射程＝攻撃できる距離",
-      "移動＝1ターンに移動できる距離",
-      "コスト＝召喚に必要なエネルギー",
-    ];
-    notes.forEach((r, i) => text(r, 22, 330 + i * 18, 13, "#bfc0cb", false));
+    // 行動表示の凡例
+    ctx.fillStyle = "#38b86a";
+    ctx.fillRect(24, 272, 22, 18);
+    text("移", 35, 281, 11, "#fff", true);
+    text("＝まだ移動できる", 54, 281, 12, "#cfead5", false);
 
-    text("ユニット性能", 395, 80, 22, "#ffdc46", false);
-    drawUnitCard("Infantry", 395, 105);
-    drawUnitCard("Warrior", 510, 105);
-    drawUnitCard("Tank", 625, 105);
-    drawUnitCard("Archer", 452, 240);
-    drawUnitCard("Cavalry", 567, 240);
+    ctx.fillStyle = "#e25555";
+    ctx.fillRect(24, 298, 22, 18);
+    text("攻", 35, 307, 11, "#fff", true);
+    text("＝攻撃可能な敵がいる", 54, 307, 12, "#ffd0d0", false);
+
+    ctx.strokeStyle = "#3f8ff0";
+    ctx.lineWidth = 3;
+    ctx.strokeRect(24, 327, 20, 20);
+    text("青い輪＝自分", 54, 337, 12, "#bcd7ff", false);
+
+    ctx.strokeStyle = "#e25353";
+    ctx.strokeRect(24, 352, 20, 20);
+    text("赤い輪＝敵", 54, 362, 12, "#ffbcbc", false);
+
+    text("ユニット性能", 395, 64, 21, "#ffdc46", false);
+    drawUnitCard("Infantry", 395, 84);
+    drawUnitCard("Warrior", 510, 84);
+    drawUnitCard("Tank", 625, 84);
+    drawUnitCard("Archer", 452, 222);
+    drawUnitCard("Cavalry", 567, 222);
+
+    text("HP＝体力　攻撃＝1回のダメージ　射程＝攻撃距離", 395, 372, 11, "#bfc0cb", false);
+    text("移動＝1ターンに進める距離　コスト＝召喚に必要なエネルギー", 395, 390, 11, "#bfc0cb", false);
 
     drawButton(300, 435, 200, 40, "ホームへ戻る", "#4e6799", 17);
   }
@@ -603,26 +618,105 @@
   }
 
   function drawPreview(kind, x, y) {
-    const colors = {
-      Infantry: "#888892",
-      Warrior: "#326dde",
-      Tank: "#2f82d8",
-      Archer: "#2aaad7",
-      Cavalry: "#8a4bd0",
-    };
-    ctx.fillStyle = colors[kind];
+    const teamColor = {
+      Infantry: "#8f8f98",
+      Warrior: "#d7a83e",
+      Tank: "#9b733e",
+      Archer: "#3caac9",
+      Cavalry: "#a45bd0",
+    }[kind];
+    const core = "#a8a8b0";
+    const coreDark = "#70717a";
+    const accent = "#e8edf6";
 
-    if (kind === "Infantry") ctx.fillRect(x - 12, y - 12, 24, 24);
-    else if (kind === "Warrior") circle(x, y, 18);
-    else if (kind === "Tank") ctx.fillRect(x - 18, y - 18, 36, 36);
-    else if (kind === "Archer") {
+    // 実戦時と同じ「外装＋中央形状」にして、遊び方画面でも種類を見分けやすくする。
+    ctx.fillStyle = teamColor;
+    ctx.beginPath();
+    ctx.arc(x, y, 18, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = core;
+    ctx.strokeStyle = coreDark;
+    ctx.lineWidth = 2;
+
+    if (kind === "Infantry") {
       ctx.beginPath();
-      ctx.moveTo(x, y - 21);
-      ctx.lineTo(x + 19, y + 18);
-      ctx.lineTo(x - 19, y + 18);
+      ctx.moveTo(x, y - 11);
+      ctx.lineTo(x + 10, y - 5);
+      ctx.lineTo(x + 8, y + 7);
+      ctx.lineTo(x, y + 12);
+      ctx.lineTo(x - 8, y + 7);
+      ctx.lineTo(x - 10, y - 5);
       ctx.closePath();
       ctx.fill();
-    } else circle(x, y, 19);
+      ctx.stroke();
+    } else if (kind === "Warrior") {
+      ctx.beginPath();
+      ctx.arc(x, y, 11, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.strokeStyle = accent;
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(x + 3, y - 7);
+      ctx.lineTo(x - 5, y + 5);
+      ctx.stroke();
+    } else if (kind === "Tank") {
+      // 重戦士：重い鎧・肩当て・兜・大剣
+      ctx.fillStyle = coreDark;
+      ctx.fillRect(x - 15, y - 8, 7, 16);
+      ctx.fillRect(x + 8, y - 8, 7, 16);
+
+      ctx.fillStyle = core;
+      ctx.fillRect(x - 10, y - 12, 20, 24);
+      ctx.strokeRect(x - 10, y - 12, 20, 24);
+
+      ctx.fillStyle = "#d9d9e0";
+      ctx.fillRect(x - 7, y - 16, 14, 7);
+      ctx.fillStyle = "#575861";
+      ctx.fillRect(x - 8, y - 10, 16, 5);
+
+      ctx.fillStyle = "#e6c15a";
+      ctx.fillRect(x - 3, y - 3, 6, 7);
+
+      ctx.strokeStyle = accent;
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.moveTo(x + 7, y + 6);
+      ctx.lineTo(x + 18, y - 12);
+      ctx.stroke();
+
+      ctx.strokeStyle = coreDark;
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(x - 7, y + 11);
+      ctx.lineTo(x - 2, y + 15);
+      ctx.moveTo(x + 7, y + 11);
+      ctx.lineTo(x + 2, y + 15);
+      ctx.stroke();
+    } else if (kind === "Archer") {
+      ctx.beginPath();
+      ctx.moveTo(x, y - 12);
+      ctx.lineTo(x + 10, y + 9);
+      ctx.lineTo(x - 10, y + 9);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      ctx.strokeStyle = accent;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(x - 2, y, 10, -1.15, 1.15);
+      ctx.stroke();
+    } else {
+      ctx.beginPath();
+      ctx.moveTo(x, y - 12);
+      ctx.lineTo(x + 10, y);
+      ctx.lineTo(x, y + 12);
+      ctx.lineTo(x - 10, y);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+    }
   }
 
   function drawGame() {
@@ -814,24 +908,51 @@
       ctx.stroke();
 
     } else if (unit.type === "Tank") {
-      // 重装甲＋砲塔
-      ctx.fillRect(px - 12, py - 9, 24, 18);
-      ctx.strokeRect(px - 12, py - 9, 24, 18);
-
+      // 重戦士：戦車ではなく「強い重装戦士」
+      // 大きな肩当て、重い胸当て、兜、大剣を組み合わせる。
       ctx.fillStyle = coreDark;
-      ctx.fillRect(px - 6, py - 6, 12, 10);
 
+      // 肩当て
+      ctx.fillRect(px - 15, py - 8, 7, 16);
+      ctx.fillRect(px + 8, py - 8, 7, 16);
+
+      // 胴体の重装甲
+      ctx.fillStyle = core;
+      ctx.fillRect(px - 10, py - 12, 20, 24);
+      ctx.strokeRect(px - 10, py - 12, 20, 24);
+
+      // 兜
+      ctx.fillStyle = "#d9d9e0";
+      ctx.fillRect(px - 7, py - 16, 14, 7);
+      ctx.fillStyle = "#575861";
+      ctx.fillRect(px - 8, py - 10, 16, 5);
+
+      // 胸の紋章
+      ctx.fillStyle = "#e6c15a";
+      ctx.fillRect(px - 3, py - 3, 6, 7);
+
+      // 大剣
       ctx.strokeStyle = accent;
-      ctx.lineWidth = 3;
+      ctx.lineWidth = 4;
       ctx.beginPath();
-      ctx.moveTo(px + 2, py);
-      ctx.lineTo(px + 13, py);
+      ctx.moveTo(px + 7, py + 6);
+      ctx.lineTo(px + 18, py - 12);
       ctx.stroke();
 
       ctx.lineWidth = 2;
       ctx.beginPath();
-      ctx.moveTo(px - 9, py + 8);
-      ctx.lineTo(px + 9, py + 8);
+      ctx.moveTo(px + 2, py + 2);
+      ctx.lineTo(px + 10, py + 7);
+      ctx.stroke();
+
+      // 足元
+      ctx.strokeStyle = coreDark;
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(px - 7, py + 11);
+      ctx.lineTo(px - 2, py + 15);
+      ctx.moveTo(px + 7, py + 11);
+      ctx.lineTo(px + 2, py + 15);
       ctx.stroke();
 
     } else if (unit.type === "Archer") {
