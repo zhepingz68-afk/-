@@ -223,6 +223,17 @@
       : d <= attacker.range;
   }
 
+  function hasAttackableTarget(unit) {
+    if (unit.attacked) return false;
+    if (enemyUnits.some(e => canAttack(unit, e))) return true;
+
+    const base = unit.enemy ? PLAYER_BASE : ENEMY_BASE;
+    const d = distance(unit, base);
+    return unit.type === "Archer"
+      ? d >= 2 && d <= unit.range
+      : d <= unit.range;
+  }
+
   function attackUnit(attacker, target) {
     if (!canAttack(attacker, target)) return false;
     target.hp -= attacker.attack;
@@ -623,6 +634,8 @@
     text(`エネルギー: ${playerEnergy}/10`, 235, 22, 14, "#ffdc46", false);
     text(`ターン: ${turn === "player" ? "あなた" : "敵"} ${turnNumber}`, 390, 22, 14, "#fff", false);
     text(`難易度: ${DIFFICULTIES[difficulty]}`, 650, 22, 13, "#9ccaff", false);
+    // 色の凡例
+    drawLegend(650, 48);
 
     for (let y = 0; y < ROWS; y++) {
       for (let x = 0; x < COLS; x++) {
@@ -656,14 +669,20 @@
 
       if (!selected.attacked) {
         for (const e of enemyUnits) {
-          if (canAttack(selected, e)) drawOverlay(e.x, e.y, "rgba(240,70,70,.32)");
+          if (canAttack(selected, e)) {
+            drawOverlay(e.x, e.y, "rgba(240,70,70,.34)");
+            drawTargetMarker(e.x, e.y);
+          }
         }
         const base = ENEMY_BASE;
         const d = distance(selected, base);
         const canHitBase = selected.type === "Archer"
           ? d >= 2 && d <= selected.range
           : d <= selected.range;
-        if (canHitBase) drawOverlay(base.x, base.y, "rgba(240,70,70,.32)");
+        if (canHitBase) {
+          drawOverlay(base.x, base.y, "rgba(240,70,70,.34)");
+          drawTargetMarker(base.x, base.y);
+        }
       }
     }
 
@@ -683,8 +702,20 @@
 
     let info = "ユニットをクリックして選択してください";
     if (summonMode) info = `${UNITS[summonMode].name}を召喚する場所を選択`;
-    if (selected) info = `${UNITS[selected.type].name}  HP:${selected.hp}/${selected.maxHp}  攻撃:${selected.attack}  射程:${selected.range}  移動:${selected.move}`;
-    text(info, 20, 450, 13, "#eeeeef", false);
+    if (selected) {
+      const moveText = selected.moved ? "移動済み" : "移動OK";
+      const attackReady = hasAttackableTarget(selected);
+      const attackText = selected.attacked ? "攻撃済み" : attackReady ? "攻撃可能" : "攻撃範囲に敵なし";
+      info = `${UNITS[selected.type].name}  HP:${selected.hp}/${selected.maxHp}  攻撃:${selected.attack}  射程:${selected.range}  移動:${selected.move}`;
+      text(info, 20, 442, 12, "#eeeeef", false);
+      drawStatusBadge(20, 463, moveText, selected.moved ? "#6b6b76" : "#38b86a");
+      drawStatusBadge(92, 463, attackText, selected.attacked ? "#6b6b76" : attackReady ? "#e25555" : "#756a46");
+      if (attackReady) {
+        text("赤いマス・◆ = 攻撃できる場所", 245, 463, 12, "#ff9b9b", false);
+      } else if (!selected.attacked) {
+        text("◆は今の位置から攻撃できる敵", 250, 463, 12, "#d0bb7a", false);
+      }
+    }
 
     if (gameWon || gameLost) {
       ctx.fillStyle = "rgba(10,10,15,.86)";
@@ -704,6 +735,15 @@
     }[kind];
   }
 
+  function drawLegend(x, y) {
+    ctx.fillStyle = "#3f8ff0";
+    ctx.fillRect(x, y - 7, 10, 10);
+    text("自分", x + 16, y - 2, 11, "#bcd7ff", false);
+    ctx.fillStyle = "#e25353";
+    ctx.fillRect(x + 53, y - 7, 10, 10);
+    text("敵", x + 69, y - 2, 11, "#ffbcbc", false);
+  }
+
   function drawBase(pos, color, label) {
     const px = BOARD_X + pos.x * CELL;
     const py = BOARD_Y + pos.y * CELL;
@@ -715,37 +755,93 @@
   function drawUnit(unit, enemy) {
     const px = BOARD_X + unit.x * CELL + 19;
     const py = BOARD_Y + unit.y * CELL + 19;
-    const c = {
-      Infantry: "#888892",
-      Warrior: enemy ? "#416fda" : "#df5c5c",
-      Tank: "#c08b3c",
-      Archer: "#28acd7",
-      Cavalry: "#8d50d0",
-    }[unit.type];
+    const bodyColors = {
+      Infantry: "#8f8f98",
+      Warrior: "#d7a83e",
+      Tank: "#9b733e",
+      Archer: "#3caac9",
+      Cavalry: "#a45bd0",
+    };
+    const teamColor = enemy ? "#e25353" : "#3f8ff0";
 
-    ctx.fillStyle = c;
-    if (unit.type === "Infantry") ctx.fillRect(px - 11, py - 11, 22, 22);
-    else if (unit.type === "Warrior") circle(px, py, 15);
-    else if (unit.type === "Tank") ctx.fillRect(px - 15, py - 15, 30, 30);
+    // チームカラーの外枠で、同じ種類でも自軍/敵軍を一目で判別できるようにする
+    ctx.fillStyle = teamColor;
+    ctx.beginPath();
+    ctx.arc(px, py, 18, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = bodyColors[unit.type];
+    if (unit.type === "Infantry") ctx.fillRect(px - 10, py - 10, 20, 20);
+    else if (unit.type === "Warrior") circle(px, py, 14);
+    else if (unit.type === "Tank") ctx.fillRect(px - 13, py - 13, 26, 26);
     else if (unit.type === "Archer") {
       ctx.beginPath();
-      ctx.moveTo(px, py - 17);
-      ctx.lineTo(px + 15, py + 14);
-      ctx.lineTo(px - 15, py + 14);
+      ctx.moveTo(px, py - 15);
+      ctx.lineTo(px + 14, py + 13);
+      ctx.lineTo(px - 14, py + 13);
       ctx.closePath();
       ctx.fill();
-    } else circle(px, py, 17);
+    } else circle(px, py, 15);
+
+    // 自軍は「青い右向きマーク」、敵軍は「赤い左向きマーク」
+    ctx.fillStyle = teamColor;
+    ctx.beginPath();
+    if (enemy) {
+      ctx.moveTo(px - 19, py);
+      ctx.lineTo(px - 12, py - 5);
+      ctx.lineTo(px - 12, py + 5);
+    } else {
+      ctx.moveTo(px + 19, py);
+      ctx.lineTo(px + 12, py - 5);
+      ctx.lineTo(px + 12, py + 5);
+    }
+    ctx.closePath();
+    ctx.fill();
 
     if (unit === selected) {
       ctx.strokeStyle = "#ffdc46";
       ctx.lineWidth = 3;
-      ctx.strokeRect(px - 19, py - 19, 38, 38);
+      ctx.strokeRect(px - 20, py - 20, 40, 40);
     }
 
+    // 行動済みは上部にバッジを出して、何がまだできるかを分かりやすくする
+    drawMiniActionBadge(px - 9, py - 20, "移", unit.moved ? "#666" : "#38b86a");
+    const attackReadyColor = unit.attacked ? "#666" : hasAttackableTarget(unit) ? "#e25555" : "#756a46";
+    drawMiniActionBadge(px + 9, py - 20, "攻", attackReadyColor);
+
     ctx.fillStyle = "#202020";
-    ctx.fillRect(px - 17, py - 23, 34, 4);
+    ctx.fillRect(px - 17, py - 27, 34, 4);
     ctx.fillStyle = "#50d26b";
-    ctx.fillRect(px - 17, py - 23, 34 * Math.max(0, unit.hp / unit.maxHp), 4);
+    ctx.fillRect(px - 17, py - 27, 34 * Math.max(0, unit.hp / unit.maxHp), 4);
+  }
+
+  function drawTargetMarker(x, y) {
+    const px = BOARD_X + x * CELL + CELL / 2;
+    const py = BOARD_Y + y * CELL + CELL / 2;
+    ctx.strokeStyle = "#ff5b5b";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(px, py - 9);
+    ctx.lineTo(px + 9, py);
+    ctx.lineTo(px, py + 9);
+    ctx.lineTo(px - 9, py);
+    ctx.closePath();
+    ctx.stroke();
+  }
+
+  function drawMiniActionBadge(x, y, label, color) {
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.arc(x, y, 7, 0, Math.PI * 2);
+    ctx.fill();
+    text(label, x, y + 0.5, 8, "#fff", true);
+  }
+
+  function drawStatusBadge(x, y, label, color) {
+    const w = label.length * 12 + 12;
+    ctx.fillStyle = color;
+    ctx.fillRect(x, y - 9, w, 18);
+    text(label, x + w / 2, y, 11, "#fff", true);
   }
 
   function drawOverlay(x, y, color) {
