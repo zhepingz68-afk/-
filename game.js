@@ -804,17 +804,17 @@
       ctx.strokeRect(px - 20, py - 20, 40, 40);
     }
 
-    // HPバーはユニットの上、行動バッジはユニットの下へ分離して、本体の形を見やすくする
-    ctx.fillStyle = "#202020";
-    ctx.fillRect(px - 16, py - 17, 32, 4);
-    ctx.fillStyle = "#50d26b";
-    ctx.fillRect(px - 16, py - 17, 32 * Math.max(0, unit.hp / unit.maxHp), 4);
-
-    // 左下＝移動、右下＝攻撃。ユニット本体と重ならない位置に固定
+    // 行動表示はユニット本体に重ならないよう、セルの下側へ移動
     const moveColor = unit.moved ? "#666" : "#38b86a";
     const attackReadyColor = unit.attacked ? "#666" : hasAttackableTarget(unit) ? "#e25555" : "#756a46";
-    drawMiniActionBadge(px - 10, py + 15, "移", moveColor);
-    drawMiniActionBadge(px + 10, py + 15, "攻", attackReadyColor);
+    drawMiniActionBadge(px - 9, py + 15, "移", moveColor);
+    drawMiniActionBadge(px + 9, py + 15, "攻", attackReadyColor);
+
+    // HPバーはユニットの上に固定し、本体の形を隠さない
+    ctx.fillStyle = "#202020";
+    ctx.fillRect(px - 17, py - 27, 34, 5);
+    ctx.fillStyle = "#50d26b";
+    ctx.fillRect(px - 17, py - 27, 34 * Math.max(0, unit.hp / unit.maxHp), 5);
   }
 
   function drawTargetMarker(x, y) {
@@ -832,14 +832,11 @@
   }
 
   function drawMiniActionBadge(x, y, label, color) {
-    const w = 16;
-    const h = 10;
     ctx.fillStyle = color;
-    ctx.fillRect(x - w / 2, y - h / 2, w, h);
-    ctx.strokeStyle = "rgba(255,255,255,.65)";
-    ctx.lineWidth = 1;
-    ctx.strokeRect(x - w / 2, y - h / 2, w, h);
-    text(label, x, y + 0.2, 8, "#fff", true);
+    ctx.beginPath();
+    ctx.arc(x, y, 7, 0, Math.PI * 2);
+    ctx.fill();
+    text(label, x, y + 0.5, 8, "#fff", true);
   }
 
   function drawStatusBadge(x, y, label, color) {
