@@ -6,11 +6,11 @@
 
   const W = 800;
   const H = 500;
-  const CELL = 38;
+  const CELL = 44;
   const COLS = 12;
   const ROWS = 5;
   const BOARD_X = 16;
-  const BOARD_Y = 90;
+  const BOARD_Y = 88;
 
   const PLAYER_BASE = { x: 0, y: 2 };
   const ENEMY_BASE = { x: 11, y: 2 };
@@ -509,7 +509,7 @@
     return names.map((k, i) => ({
       kind: k,
       x: 12 + i * 102,
-      y: 315,
+      y: 332,
       w: 94,
       h: 42,
     }));
@@ -629,14 +629,15 @@
     ctx.fillStyle = "#20202a";
     ctx.fillRect(0, 0, W, H);
 
-    text(`自分 HP: ${playerHp}`, 15, 22, 14, "#fff", false);
-    text(`敵 HP: ${enemyHp}`, 135, 22, 14, "#ff8888", false);
-    text(`エネルギー: ${playerEnergy}/10`, 235, 22, 14, "#ffdc46", false);
-    text(`ターン: ${turn === "player" ? "あなた" : "敵"} ${turnNumber}`, 390, 22, 14, "#fff", false);
-    text(`難易度: ${DIFFICULTIES[difficulty]}`, 650, 22, 13, "#9ccaff", false);
-    // 色の凡例
-    drawLegend(650, 48);
+    // 上部情報バー
+    drawInfoPanel(12, 8, 116, 34, `自分 HP ${playerHp}`, "#3f8ff0");
+    drawInfoPanel(136, 8, 116, 34, `敵 HP ${enemyHp}`, "#e25353");
+    drawInfoPanel(260, 8, 154, 34, `エネルギー ${playerEnergy}/10`, "#b69535");
+    drawInfoPanel(422, 8, 152, 34, `ターン ${turn === "player" ? "あなた" : "敵"} ${turnNumber}`, "#6c7bb8");
+    drawInfoPanel(582, 8, 108, 34, DIFFICULTIES[difficulty], "#536b91");
+    drawLegend(700, 25);
 
+    // 盤面
     for (let y = 0; y < ROWS; y++) {
       for (let x = 0; x < COLS; x++) {
         const px = BOARD_X + x * CELL;
@@ -646,23 +647,27 @@
         ctx.fillRect(px, py, CELL, CELL);
 
         if (PLAYER_SUMMON.includes(x)) {
-          ctx.fillStyle = summonMode ? "#3f8954" : "#2a568f";
+          ctx.fillStyle = summonMode ? "#32784a" : "#284f82";
           ctx.fillRect(px, py, CELL, CELL);
+          text("自軍", px + CELL / 2, py + CELL - 7, 8, "#b9dcff", true);
         } else if (ENEMY_SUMMON.includes(x)) {
           ctx.fillStyle = "#52365a";
           ctx.fillRect(px, py, CELL, CELL);
+          text("敵軍", px + CELL / 2, py + CELL - 7, 8, "#ffc6d0", true);
         }
 
-        ctx.strokeStyle = "#71717d";
+        ctx.strokeStyle = "#757584";
+        ctx.lineWidth = 1;
         ctx.strokeRect(px, py, CELL, CELL);
       }
     }
 
+    // 選択ユニットの移動範囲・攻撃対象を明確に表示
     if (selected) {
       if (!selected.moved) {
         for (let y = 0; y < ROWS; y++) {
           for (let x = 0; x < COLS; x++) {
-            if (canMove(selected, x, y)) drawOverlay(x, y, "rgba(70,220,90,.28)");
+            if (canMove(selected, x, y)) drawOverlay(x, y, "rgba(70,220,90,.24)");
           }
         }
       }
@@ -670,7 +675,7 @@
       if (!selected.attacked) {
         for (const e of enemyUnits) {
           if (canAttack(selected, e)) {
-            drawOverlay(e.x, e.y, "rgba(240,70,70,.34)");
+            drawOverlay(e.x, e.y, "rgba(240,70,70,.42)");
             drawTargetMarker(e.x, e.y);
           }
         }
@@ -680,10 +685,17 @@
           ? d >= 2 && d <= selected.range
           : d <= selected.range;
         if (canHitBase) {
-          drawOverlay(base.x, base.y, "rgba(240,70,70,.34)");
+          drawOverlay(base.x, base.y, "rgba(240,70,70,.42)");
           drawTargetMarker(base.x, base.y);
         }
       }
+
+      // 選択中ユニットの強いハイライト
+      const sx = BOARD_X + selected.x * CELL;
+      const sy = BOARD_Y + selected.y * CELL;
+      ctx.strokeStyle = "#ffdc46";
+      ctx.lineWidth = 3;
+      ctx.strokeRect(sx + 2, sy + 2, CELL - 4, CELL - 4);
     }
 
     drawBase(PLAYER_BASE, "#2d8b58", "自分の城");
@@ -692,37 +704,59 @@
     for (const u of playerUnits) drawUnit(u, false);
     for (const u of enemyUnits) drawUnit(u, true);
 
+    // 召喚ボタン
     buttonRects().forEach((r) => {
       const selectedColor = summonMode === r.kind ? "#b69535" : unitButtonColor(r.kind);
-      drawButton(r.x, r.y, r.w, r.h, `${UNITS[r.kind].name} ${UNITS[r.kind].cost}`, selectedColor, 13);
+      drawButton(r.x, r.y, r.w, r.h, `${UNITS[r.kind].name}  コスト${UNITS[r.kind].cost}`, selectedColor, 12);
     });
 
-    drawButton(510, 315, 100, 42, "ターン終了", "#537343", 13);
-    drawButton(625, 315, 90, 42, "ホーム", "#4a4a5c", 13);
+    drawButton(522, 332, 122, 42, "ターン終了", "#537343", 13);
+    drawButton(656, 332, 102, 42, "ホーム", "#4a4a5c", 13);
+
+    // 行動説明エリア
+    ctx.fillStyle = "#2a2a36";
+    ctx.fillRect(12, 382, 746, 104);
+    ctx.strokeStyle = "#555565";
+    ctx.lineWidth = 1;
+    ctx.strokeRect(12, 382, 746, 104);
 
     let info = "ユニットをクリックして選択してください";
-    if (summonMode) info = `${UNITS[summonMode].name}を召喚する場所を選択`;
+    if (summonMode) info = `${UNITS[summonMode].name}：左側の青い自軍エリアをクリックして召喚`;
+
+    text(info, 24, 398, 13, "#f0f0f4", false);
+    text("緑 = 移動できる場所", 24, 421, 12, "#7cf39b", false);
+    text("赤 + ◆ = 今すぐ攻撃できる対象", 205, 421, 12, "#ff8585", false);
+    text("青い輪 = 自分", 475, 421, 12, "#8fbbff", false);
+    text("赤い輪 = 敵", 610, 421, 12, "#ff9d9d", false);
+
     if (selected) {
-      const moveText = selected.moved ? "移動済み" : "移動OK";
+      const moveText = selected.moved ? "移動済み" : "移動できます";
       const attackReady = hasAttackableTarget(selected);
-      const attackText = selected.attacked ? "攻撃済み" : attackReady ? "攻撃可能" : "攻撃範囲に敵なし";
-      info = `${UNITS[selected.type].name}  HP:${selected.hp}/${selected.maxHp}  攻撃:${selected.attack}  射程:${selected.range}  移動:${selected.move}`;
-      text(info, 20, 442, 12, "#eeeeef", false);
-      drawStatusBadge(20, 463, moveText, selected.moved ? "#6b6b76" : "#38b86a");
-      drawStatusBadge(92, 463, attackText, selected.attacked ? "#6b6b76" : attackReady ? "#e25555" : "#756a46");
-      if (attackReady) {
-        text("赤いマス・◆ = 攻撃できる場所", 245, 463, 12, "#ff9b9b", false);
-      } else if (!selected.attacked) {
-        text("◆は今の位置から攻撃できる敵", 250, 463, 12, "#d0bb7a", false);
-      }
+      const attackText = selected.attacked ? "攻撃済み" : attackReady ? "攻撃できます" : "攻撃対象なし";
+      text(`${UNITS[selected.type].name}  HP ${selected.hp}/${selected.maxHp}  攻撃 ${selected.attack}  射程 ${selected.range}  移動 ${selected.move}`, 24, 448, 12, "#eeeeef", false);
+      drawStatusBadge(24, 473, moveText, selected.moved ? "#666b75" : "#38b86a");
+      drawStatusBadge(132, 473, attackText, selected.attacked ? "#666b86" : attackReady ? "#e25555" : "#756a46");
+      if (attackReady) text("赤い対象をクリック！", 270, 473, 12, "#ffb0b0", false);
     }
 
     if (gameWon || gameLost) {
-      ctx.fillStyle = "rgba(10,10,15,.86)";
-      ctx.fillRect(240, 175, 320, 110);
-      text(gameWon ? "勝利！" : "敗北…", 400, 218, 36, gameWon ? "#ffdc46" : "#ff8888", true);
-      text("ホームで再戦できます", 400, 258, 15, "#eee", true);
+      ctx.fillStyle = "rgba(10,10,15,.88)";
+      ctx.fillRect(220, 176, 360, 124);
+      ctx.strokeStyle = gameWon ? "#ffdc46" : "#ff8888";
+      ctx.lineWidth = 3;
+      ctx.strokeRect(220, 176, 360, 124);
+      text(gameWon ? "勝利！" : "敗北…", 400, 220, 38, gameWon ? "#ffdc46" : "#ff8888", true);
+      text("ホームで再戦できます", 400, 265, 15, "#eee", true);
     }
+  }
+
+  function drawInfoPanel(x, y, w, h, label, color) {
+    ctx.fillStyle = "#292936";
+    ctx.fillRect(x, y, w, h);
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2;
+    ctx.strokeRect(x, y, w, h);
+    text(label, x + w / 2, y + h / 2 + 1, 12, "#f4f4f7", true);
   }
 
   function unitButtonColor(kind) {
@@ -738,36 +772,41 @@
   function drawLegend(x, y) {
     ctx.fillStyle = "#3f8ff0";
     ctx.fillRect(x, y - 7, 10, 10);
-    text("自分", x + 16, y - 2, 11, "#bcd7ff", false);
+    text("自分", x + 16, y - 2, 10, "#bcd7ff", false);
     ctx.fillStyle = "#e25353";
-    ctx.fillRect(x + 53, y - 7, 10, 10);
-    text("敵", x + 69, y - 2, 11, "#ffbcbc", false);
+    ctx.fillRect(x + 55, y - 7, 10, 10);
+    text("敵", x + 71, y - 2, 10, "#ffbcbc", false);
   }
 
   function drawBase(pos, color, label) {
     const px = BOARD_X + pos.x * CELL;
     const py = BOARD_Y + pos.y * CELL;
     ctx.fillStyle = color;
-    ctx.fillRect(px, py, CELL, CELL);
-    text(label, px + 5, py + 31, 10, "#fff", false);
+    ctx.fillRect(px + 2, py + 2, CELL - 4, CELL - 4);
+    ctx.strokeStyle = "#ffffff";
+    ctx.lineWidth = 2;
+    ctx.strokeRect(px + 2, py + 2, CELL - 4, CELL - 4);
+    text(label, px + CELL / 2, py + CELL / 2 + 10, 8, "#fff", true);
+    text(pos === PLAYER_BASE ? "自" : "敵", px + CELL / 2, py + CELL / 2 - 7, 14, "#fff", true);
   }
 
   function drawUnit(unit, enemy) {
-    const px = BOARD_X + unit.x * CELL + 19;
-    const py = BOARD_Y + unit.y * CELL + 19;
+    const px = BOARD_X + unit.x * CELL + CELL / 2;
+    const py = BOARD_Y + unit.y * CELL + CELL / 2;
     const bodyColors = {
-      Infantry: "#8f8f98",
+      Infantry: "#9a9aa4",
       Warrior: "#d7a83e",
       Tank: "#9b733e",
       Archer: "#3caac9",
       Cavalry: "#a45bd0",
     };
     const teamColor = enemy ? "#e25353" : "#3f8ff0";
+    const teamLight = enemy ? "#ffc0c0" : "#c7ddff";
 
-    // チームカラーの外枠で、同じ種類でも自軍/敵軍を一目で判別できるようにする
+    // チーム色の大きな輪で、自軍/敵軍を常に判別できるようにする
     ctx.fillStyle = teamColor;
     ctx.beginPath();
-    ctx.arc(px, py, 18, 0, Math.PI * 2);
+    ctx.arc(px, py, 19, 0, Math.PI * 2);
     ctx.fill();
 
     ctx.fillStyle = bodyColors[unit.type];
@@ -783,48 +822,55 @@
       ctx.fill();
     } else circle(px, py, 15);
 
-    // 自軍は「青い右向きマーク」、敵軍は「赤い左向きマーク」
+    // 自/敵タグ
     ctx.fillStyle = teamColor;
-    ctx.beginPath();
-    if (enemy) {
-      ctx.moveTo(px - 19, py);
-      ctx.lineTo(px - 12, py - 5);
-      ctx.lineTo(px - 12, py + 5);
-    } else {
-      ctx.moveTo(px + 19, py);
-      ctx.lineTo(px + 12, py - 5);
-      ctx.lineTo(px + 12, py + 5);
-    }
-    ctx.closePath();
-    ctx.fill();
+    ctx.fillRect(px - 19, py + 12, 18, 10);
+    text(enemy ? "敵" : "自", px - 10, py + 17, 8, "#fff", true);
 
+    // 行動可能状態を見やすく表示
+    drawMiniActionBadge(px + 11, py - 14, "移", unit.moved ? "#666b75" : "#35bd65");
+    const attackReadyColor = unit.attacked ? "#666b75" : hasAttackableTarget(unit) ? "#e34d4d" : "#756a46";
+    drawMiniActionBadge(px + 11, py + 5, "攻", attackReadyColor);
+
+    // HPバー
+    ctx.fillStyle = "#17171d";
+    ctx.fillRect(px - 17, py - 26, 34, 5);
+    ctx.fillStyle = unit.hp / unit.maxHp <= 0.35 ? "#ff6868" : "#50d26b";
+    ctx.fillRect(px - 17, py - 26, 34 * Math.max(0, unit.hp / unit.maxHp), 5);
+
+    // 選択中は黄色の太枠
     if (unit === selected) {
       ctx.strokeStyle = "#ffdc46";
       ctx.lineWidth = 3;
-      ctx.strokeRect(px - 20, py - 20, 40, 40);
+      ctx.strokeRect(px - 21, py - 21, 42, 42);
     }
 
-    // 行動済みは上部にバッジを出して、何がまだできるかを分かりやすくする
-    drawMiniActionBadge(px - 9, py - 20, "移", unit.moved ? "#666" : "#38b86a");
-    const attackReadyColor = unit.attacked ? "#666" : hasAttackableTarget(unit) ? "#e25555" : "#756a46";
-    drawMiniActionBadge(px + 9, py - 20, "攻", attackReadyColor);
-
-    ctx.fillStyle = "#202020";
-    ctx.fillRect(px - 17, py - 27, 34, 4);
-    ctx.fillStyle = "#50d26b";
-    ctx.fillRect(px - 17, py - 27, 34 * Math.max(0, unit.hp / unit.maxHp), 4);
+    // 敵ユニットは赤い小さな矢印、自軍は青い小さな矢印
+    ctx.fillStyle = teamLight;
+    ctx.beginPath();
+    if (enemy) {
+      ctx.moveTo(px - 21, py);
+      ctx.lineTo(px - 15, py - 4);
+      ctx.lineTo(px - 15, py + 4);
+    } else {
+      ctx.moveTo(px + 21, py);
+      ctx.lineTo(px + 15, py - 4);
+      ctx.lineTo(px + 15, py + 4);
+    }
+    ctx.closePath();
+    ctx.fill();
   }
 
   function drawTargetMarker(x, y) {
     const px = BOARD_X + x * CELL + CELL / 2;
     const py = BOARD_Y + y * CELL + CELL / 2;
     ctx.strokeStyle = "#ff5b5b";
-    ctx.lineWidth = 2;
+    ctx.lineWidth = 3;
     ctx.beginPath();
-    ctx.moveTo(px, py - 9);
-    ctx.lineTo(px + 9, py);
-    ctx.lineTo(px, py + 9);
-    ctx.lineTo(px - 9, py);
+    ctx.moveTo(px, py - 11);
+    ctx.lineTo(px + 11, py);
+    ctx.lineTo(px, py + 11);
+    ctx.lineTo(px - 11, py);
     ctx.closePath();
     ctx.stroke();
   }
@@ -832,9 +878,9 @@
   function drawMiniActionBadge(x, y, label, color) {
     ctx.fillStyle = color;
     ctx.beginPath();
-    ctx.arc(x, y, 7, 0, Math.PI * 2);
+    ctx.arc(x, y, 9, 0, Math.PI * 2);
     ctx.fill();
-    text(label, x, y + 0.5, 8, "#fff", true);
+    text(label, x, y + 0.5, 9, "#fff", true);
   }
 
   function drawStatusBadge(x, y, label, color) {
@@ -906,7 +952,7 @@
     }
 
     if (gameWon || gameLost) {
-      if (hitRect(mx, my, {x:625,y:315,w:90,h:42})) {
+      if (hitRect(mx, my, {x:656,y:332,w:102,h:42})) {
         screenMode = "home";
         resetGame();
       }
@@ -915,7 +961,7 @@
 
     if (turn !== "player") return;
 
-    if (hitRect(mx, my, {x:625,y:315,w:90,h:42})) {
+    if (hitRect(mx, my, {x:656,y:332,w:102,h:42})) {
       screenMode = "home";
       resetGame();
       return;
@@ -932,7 +978,7 @@
       }
     }
 
-    if (hitRect(mx, my, {x:510,y:315,w:100,h:42})) {
+    if (hitRect(mx, my, {x:522,y:332,w:122,h:42})) {
       summonMode = null;
       selected = null;
       enemyTurn();
