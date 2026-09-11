@@ -547,49 +547,63 @@
     ctx.fillStyle = "#191923";
     ctx.fillRect(0, 0, W, H);
 
-    text("あそびかた", 400, 34, 38, "#ffdc46", true);
+    text("あそびかた", 400, 34, 36, "#ffdc46", true);
 
-    text("基本ルール", 22, 80, 22, "#ffdc46", false);
+    // 左：基本ルール
+    ctx.fillStyle = "#252532";
+    ctx.fillRect(16, 68, 304, 350);
+    ctx.strokeStyle = "#5d5d70";
+    ctx.lineWidth = 2;
+    ctx.strokeRect(16, 68, 304, 350);
+
+    text("基本ルール", 32, 89, 21, "#ffdc46", false);
     const rules = [
       "① ユニットボタンで種類を選ぶ",
       "② 左側2列の青い場所で召喚",
       "③ 自分のユニットをクリックして選択",
-      "④ 緑のマスへ移動できる",
-      "⑤ 赤いマスの敵を攻撃できる",
-      "⑥ END TURNで敵のターンへ",
-      "⑦ 敵の城HPを0にすれば勝利！",
+      "④ 緑のマス ＝ 移動できる場所",
+      "⑤ 赤いマス＋◆ ＝ 攻撃できる対象",
+      "⑥ 1体につき移動1回＋攻撃1回まで",
+      "⑦ ターン終了で敵が自動で行動",
+      "⑧ 敵の城HPを0にすれば勝利！",
     ];
-    rules.forEach((r, i) => text(r, 22, 110 + i * 28, 15, "#eeeeef", false));
+    rules.forEach((r, i) => text(r, 32, 120 + i * 31, 14, "#eeeeef", false));
 
-    const notes = [
-      "HP＝体力",
-      "攻撃＝1回のダメージ",
-      "射程＝攻撃できる距離",
-      "移動＝1ターンに移動できる距離",
-      "コスト＝召喚に必要なエネルギー",
+    text("見分け方", 32, 386, 18, "#ffdc46", false);
+    text("青い輪＝自分　　赤い輪＝敵", 32, 408, 13, "#d9e6ff", false);
+
+    // 右：ユニット性能と見た目
+    ctx.fillStyle = "#252532";
+    ctx.fillRect(332, 68, 452, 350);
+    ctx.strokeStyle = "#5d5d70";
+    ctx.lineWidth = 2;
+    ctx.strokeRect(332, 68, 452, 350);
+
+    text("ユニット性能・見た目", 350, 89, 21, "#ffdc46", false);
+
+    const cards = [
+      ["Infantry", 346, 108],
+      ["Warrior", 492, 108],
+      ["Tank", 638, 108],
+      ["Archer", 419, 246],
+      ["Cavalry", 565, 246],
     ];
-    notes.forEach((r, i) => text(r, 22, 330 + i * 18, 13, "#bfc0cb", false));
+    cards.forEach(([kind, x, y]) => drawUnitCard(kind, x, y));
 
-    text("ユニット性能", 395, 80, 22, "#ffdc46", false);
-    drawUnitCard("Infantry", 395, 105);
-    drawUnitCard("Warrior", 510, 105);
-    drawUnitCard("Tank", 625, 105);
-    drawUnitCard("Archer", 452, 240);
-    drawUnitCard("Cavalry", 567, 240);
-
-    drawButton(300, 435, 200, 40, "ホームへ戻る", "#4e6799", 17);
+    text("※ ユニット中央の形が種類、外側の青/赤が所属を表します。", 350, 389, 11, "#bfc0cb", false);
+    drawButton(300, 438, 200, 40, "ホームへ戻る", "#4e6799", 17);
   }
 
   function drawUnitCard(kind, x, y) {
     const d = UNITS[kind];
     ctx.fillStyle = "#373747";
-    ctx.fillRect(x, y, 108, 122);
+    ctx.fillRect(x, y, 135, 122);
     ctx.strokeStyle = "#767687";
     ctx.lineWidth = 2;
-    ctx.strokeRect(x, y, 108, 122);
+    ctx.strokeRect(x, y, 135, 122);
 
-    drawPreview(kind, x + 27, y + 34);
-    text(d.name, x + 45, y + 16, 14, "#ffdc46", false);
+    text(d.name, x + 67, y + 15, 14, "#ffdc46", true);
+    drawPreview(kind, x + 28, y + 53, 0.78);
 
     const rows = [
       `HP ${d.hp}`,
@@ -598,31 +612,18 @@
       `移動 ${d.move}`,
       `コスト ${d.cost}`,
     ];
-
-    rows.forEach((s, i) => text(s, x + 45, y + 45 + i * 14, 12, "#eeeeef", false));
+    rows.forEach((s, i) => text(s, x + 54, y + 42 + i * 15, 11, "#eeeeef", false));
   }
 
-  function drawPreview(kind, x, y) {
+  function drawPreview(kind, x, y, scale = 1) {
     const colors = {
-      Infantry: "#888892",
-      Warrior: "#326dde",
-      Tank: "#2f82d8",
-      Archer: "#2aaad7",
-      Cavalry: "#8a4bd0",
+      Infantry: "#9a9aa4",
+      Warrior: "#d7a83e",
+      Tank: "#9b733e",
+      Archer: "#3caac9",
+      Cavalry: "#a45bd0",
     };
-    ctx.fillStyle = colors[kind];
-
-    if (kind === "Infantry") ctx.fillRect(x - 12, y - 12, 24, 24);
-    else if (kind === "Warrior") circle(x, y, 18);
-    else if (kind === "Tank") ctx.fillRect(x - 18, y - 18, 36, 36);
-    else if (kind === "Archer") {
-      ctx.beginPath();
-      ctx.moveTo(x, y - 21);
-      ctx.lineTo(x + 19, y + 18);
-      ctx.lineTo(x - 19, y + 18);
-      ctx.closePath();
-      ctx.fill();
-    } else circle(x, y, 19);
+    drawUnitShape(kind, x, y, scale, colors[kind]);
   }
 
   function drawGame() {
@@ -803,31 +804,21 @@
     const teamColor = enemy ? "#e25353" : "#3f8ff0";
     const teamLight = enemy ? "#ffc0c0" : "#c7ddff";
 
-    // チーム色の大きな輪で、自軍/敵軍を常に判別できるようにする
+    // 所属リング
     ctx.fillStyle = teamColor;
     ctx.beginPath();
     ctx.arc(px, py, 19, 0, Math.PI * 2);
     ctx.fill();
 
-    ctx.fillStyle = bodyColors[unit.type];
-    if (unit.type === "Infantry") ctx.fillRect(px - 10, py - 10, 20, 20);
-    else if (unit.type === "Warrior") circle(px, py, 14);
-    else if (unit.type === "Tank") ctx.fillRect(px - 13, py - 13, 26, 26);
-    else if (unit.type === "Archer") {
-      ctx.beginPath();
-      ctx.moveTo(px, py - 15);
-      ctx.lineTo(px + 14, py + 13);
-      ctx.lineTo(px - 14, py + 13);
-      ctx.closePath();
-      ctx.fill();
-    } else circle(px, py, 15);
+    // 種類ごとに形を完全に変える
+    drawUnitShape(unit.type, px, py, 0.82, bodyColors[unit.type]);
 
     // 自/敵タグ
     ctx.fillStyle = teamColor;
     ctx.fillRect(px - 19, py + 12, 18, 10);
     text(enemy ? "敵" : "自", px - 10, py + 17, 8, "#fff", true);
 
-    // 行動可能状態を見やすく表示
+    // 行動可能状態
     drawMiniActionBadge(px + 11, py - 14, "移", unit.moved ? "#666b75" : "#35bd65");
     const attackReadyColor = unit.attacked ? "#666b75" : hasAttackableTarget(unit) ? "#e34d4d" : "#756a46";
     drawMiniActionBadge(px + 11, py + 5, "攻", attackReadyColor);
@@ -845,7 +836,7 @@
       ctx.strokeRect(px - 21, py - 21, 42, 42);
     }
 
-    // 敵ユニットは赤い小さな矢印、自軍は青い小さな矢印
+    // 進行方向マーク
     ctx.fillStyle = teamLight;
     ctx.beginPath();
     if (enemy) {
@@ -859,6 +850,76 @@
     }
     ctx.closePath();
     ctx.fill();
+  }
+
+  // ユニット種類ごとの固有アイコン
+  function drawUnitShape(kind, x, y, scale = 1, color = "#fff") {
+    ctx.save();
+    ctx.fillStyle = color;
+    ctx.strokeStyle = color;
+    ctx.lineWidth = Math.max(1, 2 * scale);
+
+    if (kind === "Infantry") {
+      // 歩兵：盾＋頭
+      const w = 16 * scale;
+      const h = 18 * scale;
+      ctx.fillRect(x - w / 2, y - h / 2 + 3 * scale, w, h - 4 * scale);
+      ctx.fillRect(x - 5 * scale, y - 10 * scale, 10 * scale, 8 * scale);
+      ctx.fillRect(x - 4 * scale, y + 10 * scale, 8 * scale, 3 * scale);
+    } else if (kind === "Warrior") {
+      // 戦士：六角形の盾
+      const r = 15 * scale;
+      ctx.beginPath();
+      for (let i = 0; i < 6; i++) {
+        const a = Math.PI / 6 + i * Math.PI / 3;
+        const px = x + Math.cos(a) * r;
+        const py = y + Math.sin(a) * r;
+        if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+      }
+      ctx.closePath();
+      ctx.fill();
+    } else if (kind === "Tank") {
+      // 重戦士：装甲＋砲塔のような独自形
+      const w = 28 * scale;
+      const h = 18 * scale;
+      ctx.fillRect(x - w / 2, y - h / 2 + 4 * scale, w, h);
+      ctx.fillRect(x - 8 * scale, y - 11 * scale, 16 * scale, 8 * scale);
+      ctx.fillRect(x + 5 * scale, y - 9 * scale, 12 * scale, 4 * scale);
+      ctx.fillRect(x - 10 * scale, y + 12 * scale, 7 * scale, 4 * scale);
+      ctx.fillRect(x + 3 * scale, y + 12 * scale, 7 * scale, 4 * scale);
+    } else if (kind === "Archer") {
+      // 弓兵：三角の体＋弓の弧＋矢
+      ctx.beginPath();
+      ctx.moveTo(x, y - 17 * scale);
+      ctx.lineTo(x + 14 * scale, y + 13 * scale);
+      ctx.lineTo(x - 14 * scale, y + 13 * scale);
+      ctx.closePath();
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(x - 8 * scale, y, 13 * scale, -1.05, 1.05);
+      ctx.strokeStyle = "#f3f3f5";
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(x - 1 * scale, y - 12 * scale);
+      ctx.lineTo(x + 13 * scale, y - 12 * scale);
+      ctx.stroke();
+    } else if (kind === "Cavalry") {
+      // 騎兵：ひし形＋頭＋脚で他ユニットと重ならない形
+      ctx.beginPath();
+      ctx.moveTo(x, y - 17 * scale);
+      ctx.lineTo(x + 15 * scale, y - 1 * scale);
+      ctx.lineTo(x, y + 13 * scale);
+      ctx.lineTo(x - 15 * scale, y - 1 * scale);
+      ctx.closePath();
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(x + 8 * scale, y - 10 * scale, 5 * scale, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillRect(x - 10 * scale, y + 10 * scale, 5 * scale, 5 * scale);
+      ctx.fillRect(x + 5 * scale, y + 10 * scale, 5 * scale, 5 * scale);
+    }
+
+    ctx.restore();
   }
 
   function drawTargetMarker(x, y) {
