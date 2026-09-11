@@ -61,16 +61,32 @@
   async function recordEvent(result) {
     const cfg = window.ENERGY_BATTLE_SUPABASE || {};
     if (!cfg.url || !cfg.anonKey) return;
+
     try {
-      const client = window.supabase.createClient(cfg.url, cfg.anonKey);
-      await client.from("game_events").insert({
-        player_id: playerId(),
-        difficulty,
-        result,
+      const response = await fetch(`${cfg.url}/rest/v1/game_events`, {
+        method: "POST",
+        headers: {
+          "apikey": cfg.anonKey,
+          "Content-Type": "application/json",
+          "Prefer": "return=minimal",
+        },
+        body: JSON.stringify({
+          player_id: playerId(),
+          difficulty,
+          result,
+        }),
       });
+
+      if (!response.ok) {
+        const detail = await response.text();
+        throw new Error(`HTTP ${response.status}: ${detail}`);
+      }
+
       if (window.refreshStats) window.refreshStats();
     } catch (error) {
       console.warn("統計送信に失敗しました", error);
+      const status = document.getElementById("statsStatus");
+      if (status) status.textContent = "統計の送信に失敗しました。コンソールを確認してください。";
     }
   }
 
