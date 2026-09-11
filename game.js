@@ -327,7 +327,9 @@
     candidates.sort((a,b) => b.score - a.score);
 
     if (difficulty === "easy") {
-      return candidates[Math.floor(Math.random() * Math.min(4, candidates.length))];
+      // かんたん：最適な手を選ばず、候補からかなりランダムに移動
+      const poolSize = Math.min(8, candidates.length);
+      return candidates[Math.floor(Math.random() * poolSize)];
     }
     return candidates[0];
   }
@@ -351,8 +353,8 @@
     }
 
     if (difficulty === "easy") {
-      const weights = options.map(k => Math.max(1, 6 - countUnits(enemyUnits, k) * 2));
-      return weightedRandom(options, weights);
+      // かんたん：強い対策をあまり考えず、手持ちからランダムに選ぶ
+      return options[Math.floor(Math.random() * options.length)];
     }
 
     if (difficulty === "normal") {
@@ -451,7 +453,15 @@
 
       const target = bestAttack(enemy);
       if (target) {
-        attackUnit(enemy, target);
+        // かんたんは、ときどき攻撃を見送る
+        if (difficulty !== "easy" || Math.random() < 0.72) {
+          attackUnit(enemy, target);
+          continue;
+        }
+      }
+
+      if (difficulty === "easy" && Math.random() < 0.35) {
+        // かんたんは約35%の確率で、そのまま行動を終える
         continue;
       }
 
