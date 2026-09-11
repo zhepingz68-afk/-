@@ -12,10 +12,21 @@
     }
 
     try {
-      const client = window.supabase.createClient(cfg.url, cfg.anonKey);
-      const { data, error } = await client.rpc("get_game_stats");
-      if (error) throw error;
+      const response = await fetch(`${cfg.url}/rest/v1/rpc/get_game_stats`, {
+        method: "POST",
+        headers: {
+          "apikey": cfg.anonKey,
+          "Content-Type": "application/json",
+        },
+        body: "{}",
+      });
 
+      if (!response.ok) {
+        const detail = await response.text();
+        throw new Error(`HTTP ${response.status}: ${detail}`);
+      }
+
+      const data = await response.json();
       const names = {
         easy: "かんたん",
         normal: "ふつう",
@@ -40,7 +51,7 @@
 
       status.textContent = "オンライン統計を更新しました。";
     } catch (error) {
-      console.warn(error);
+      console.warn("統計の取得に失敗しました", error);
       status.textContent = "統計の取得に失敗しました。設定を確認してください。";
     }
   };
