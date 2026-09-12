@@ -327,7 +327,9 @@
     candidates.sort((a,b) => b.score - a.score);
 
     if (difficulty === "easy") {
-      return candidates[Math.floor(Math.random() * Math.min(4, candidates.length))];
+      // かんたん：最適な手を選ばず、候補からかなりランダムに移動
+      const poolSize = Math.min(8, candidates.length);
+      return candidates[Math.floor(Math.random() * poolSize)];
     }
     return candidates[0];
   }
@@ -351,8 +353,8 @@
     }
 
     if (difficulty === "easy") {
-      const weights = options.map(k => Math.max(1, 6 - countUnits(enemyUnits, k) * 2));
-      return weightedRandom(options, weights);
+      // かんたん：強い対策をあまり考えず、手持ちからランダムに選ぶ
+      return options[Math.floor(Math.random() * options.length)];
     }
 
     if (difficulty === "normal") {
@@ -451,7 +453,15 @@
 
       const target = bestAttack(enemy);
       if (target) {
-        attackUnit(enemy, target);
+        // かんたんは、ときどき攻撃を見送る
+        if (difficulty !== "easy" || Math.random() < 0.72) {
+          attackUnit(enemy, target);
+          continue;
+        }
+      }
+
+      if (difficulty === "easy" && Math.random() < 0.35) {
+        // かんたんは約35%の確率で、そのまま行動を終える
         continue;
       }
 
@@ -547,37 +557,98 @@
     ctx.fillStyle = "#191923";
     ctx.fillRect(0, 0, W, H);
 
-    text("あそびかた", 400, 34, 38, "#ffdc46", true);
+    text("あそびかた", 400, 32, 36, "#ffdc46", true);
 
-    text("基本ルール", 22, 80, 22, "#ffdc46", false);
+    // 左：ルール
+    ctx.fillStyle = "#2b2b38";
+    ctx.fillRect(18, 58, 350, 355);
+    ctx.strokeStyle = "#666679";
+    ctx.lineWidth = 2;
+    ctx.strokeRect(18, 58, 350, 355);
+
+    text("基本ルール", 32, 82, 21, "#ffdc46", false);
+
     const rules = [
-      "① ユニットボタンで種類を選ぶ",
-      "② 左側2列の青い場所で召喚",
-      "③ 自分のユニットをクリックして選択",
-      "④ 緑のマスへ移動できる",
-      "⑤ 赤いマスの敵を攻撃できる",
-      "⑥ END TURNで敵のターンへ",
-      "⑦ 敵の城HPを0にすれば勝利！",
+      "① ユニットを選び、左側2列の青い場所に召喚",
+      "② 自分のユニットをクリックして選択",
+      "③ 緑のマス＝移動できる場所",
+      "④ 赤いマス＋◆＝攻撃できる対象",
+      "⑤ 1体につき、移動1回・攻撃1回まで",
+      "⑥ ターン終了で敵が自動で行動",
+      "⑦ 敵の城HPを0にすると勝利！",
     ];
-    rules.forEach((r, i) => text(r, 22, 110 + i * 28, 15, "#eeeeef", false));
+    rules.forEach((r, i) => text(r, 32, 112 + i * 24, 13, "#eeeeef", false));
 
-    const notes = [
-      "HP＝体力",
-      "攻撃＝1回のダメージ",
-      "射程＝攻撃できる距離",
-      "移動＝1ターンに移動できる距離",
-      "コスト＝召喚に必要なエネルギー",
+    text("画面の見方", 32, 292, 18, "#ffdc46", false);
+
+    ctx.fillStyle = "rgba(70,220,90,.55)";
+    ctx.fillRect(34, 310, 16, 16);
+    text("緑のマス＝移動できる", 58, 318, 12, "#d6efd9", false);
+
+    ctx.fillStyle = "rgba(240,70,70,.6)";
+    ctx.fillRect(34, 336, 16, 16);
+    text("赤いマス＋◆＝攻撃できる", 58, 344, 12, "#ffd0d0", false);
+
+    ctx.strokeStyle = "#3f8ff0";
+    ctx.lineWidth = 3;
+    ctx.strokeRect(34, 362, 18, 18);
+    text("青い輪＝自分", 58, 371, 12, "#bcd7ff", false);
+
+    ctx.strokeStyle = "#e25353";
+    ctx.strokeRect(160, 362, 18, 18);
+    text("赤い輪＝敵", 184, 371, 12, "#ffbcbc", false);
+
+    text("「移」＝移動可能　「攻」＝攻撃可能", 32, 400, 11, "#c7c7d2", false);
+
+    // 中央：行動表示
+    ctx.fillStyle = "#232331";
+    ctx.fillRect(386, 58, 190, 355);
+    ctx.strokeStyle = "#666679";
+    ctx.strokeRect(386, 58, 190, 355);
+
+    text("行動表示", 481, 82, 19, "#ffdc46", true);
+
+    drawMiniActionBadge(414, 113, "移", "#38b86a");
+    text("まだ移動できる", 430, 113, 12, "#eeeeef", false);
+
+    drawMiniActionBadge(414, 145, "移", "#666");
+    text("移動済み", 430, 145, 12, "#eeeeef", false);
+
+    drawMiniActionBadge(414, 177, "攻", "#e25555");
+    text("攻撃できる", 430, 177, 12, "#eeeeef", false);
+
+    drawMiniActionBadge(414, 209, "攻", "#756a46");
+    text("攻撃範囲に敵なし", 430, 209, 11, "#eeeeef", false);
+
+    drawMiniActionBadge(414, 241, "攻", "#666");
+    text("攻撃済み", 430, 241, 12, "#eeeeef", false);
+
+    text("戦いのポイント", 481, 280, 18, "#ffdc46", true);
+    const points = [
+      "弓兵：2～3マスから攻撃",
+      "重戦士：高HP・高火力",
+      "騎兵：3マス移動",
+      "エネルギー：毎ターン+2",
+      "最大10・全難易度で同じ",
+      "難易度＝ボットの賢さ",
     ];
-    notes.forEach((r, i) => text(r, 22, 330 + i * 18, 13, "#bfc0cb", false));
+    points.forEach((r, i) => text(r, 400, 307 + i * 17, 11, "#d6d6df", false));
 
-    text("ユニット性能", 395, 80, 22, "#ffdc46", false);
-    drawUnitCard("Infantry", 395, 105);
-    drawUnitCard("Warrior", 510, 105);
-    drawUnitCard("Tank", 625, 105);
-    drawUnitCard("Archer", 452, 240);
-    drawUnitCard("Cavalry", 567, 240);
+    // 右：現在の性能値
+    ctx.fillStyle = "#232331";
+    ctx.fillRect(592, 58, 190, 355);
+    ctx.strokeStyle = "#666679";
+    ctx.strokeRect(592, 58, 190, 355);
 
-    drawButton(300, 435, 200, 40, "ホームへ戻る", "#4e6799", 17);
+    text("ユニット性能", 687, 82, 19, "#ffdc46", true);
+
+    drawUnitCard("Infantry", 603, 96);
+    drawUnitCard("Warrior", 603, 160);
+    drawUnitCard("Tank", 603, 224);
+    drawUnitCard("Archer", 603, 288);
+    drawUnitCard("Cavalry", 603, 352);
+
+    drawButton(300, 440, 200, 40, "ホームへ戻る", "#4e6799", 17);
   }
 
   function drawUnitCard(kind, x, y) {
