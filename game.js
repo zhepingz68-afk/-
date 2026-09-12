@@ -952,26 +952,40 @@
       ctx.stroke();
 
     } else if (unit.type === "Tank") {
-      // 重装甲＋砲塔
-      ctx.fillRect(px - 12, py - 9, 24, 18);
-      ctx.strokeRect(px - 12, py - 9, 24, 18);
-
+      // 重戦士：重装甲の強い戦士
       ctx.fillStyle = coreDark;
-      ctx.fillRect(px - 6, py - 6, 12, 10);
+      ctx.fillRect(px - 12, py - 10, 24, 21);
+      ctx.fillStyle = core;
+      ctx.fillRect(px - 9, py - 5, 18, 14);
+      ctx.strokeRect(px - 9, py - 5, 18, 14);
+
+      ctx.fillRect(px - 8, py - 13, 16, 9);
+
+      ctx.beginPath();
+      ctx.moveTo(px - 11, py - 5);
+      ctx.lineTo(px - 17, py + 1);
+      ctx.lineTo(px - 11, py + 8);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(px + 11, py - 5);
+      ctx.lineTo(px + 17, py + 1);
+      ctx.lineTo(px + 11, py + 8);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = "#d6d7dd";
+      ctx.fillRect(px - 7, py - 12, 14, 6);
 
       ctx.strokeStyle = accent;
-      ctx.lineWidth = 3;
+      ctx.lineWidth = Math.max(2, 3);
       ctx.beginPath();
-      ctx.moveTo(px + 2, py);
-      ctx.lineTo(px + 13, py);
+      ctx.moveTo(px + 5, py - 2);
+      ctx.lineTo(px + 17, py - 14);
       ctx.stroke();
-
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.moveTo(px - 9, py + 8);
-      ctx.lineTo(px + 9, py + 8);
-      ctx.stroke();
-
     } else if (unit.type === "Archer") {
       // 弓兵：三角コア＋弓
       ctx.beginPath();
