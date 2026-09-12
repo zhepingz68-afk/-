@@ -18,11 +18,11 @@
   const ENEMY_SUMMON = [9, 10];
 
   const UNITS = {
-    Infantry: { cost: 1, hp: 4, attack: 1, range: 1, move: 1, name: "歩兵" },
-    Warrior:  { cost: 3, hp: 10, attack: 2, range: 1, move: 2, name: "戦士" },
-    Tank:     { cost: 5, hp: 16, attack: 4, range: 1, move: 1, name: "重戦士" },
-    Archer:   { cost: 4, hp: 6, attack: 2, range: 3, move: 1, name: "弓兵" },
-    Cavalry:  { cost: 5, hp: 8, attack: 4, range: 1, move: 3, name: "騎兵" },
+    Infantry: { cost: 1, hp: 2, attack: 1, range: 1, move: 1, name: "歩兵" },
+    Warrior:  { cost: 3, hp: 5, attack: 1, range: 1, move: 2, name: "戦士" },
+    Tank:     { cost: 5, hp: 8, attack: 2, range: 1, move: 1, name: "重戦士" },
+    Archer:   { cost: 4, hp: 3, attack: 1, range: 3, move: 1, name: "弓兵" },
+    Cavalry:  { cost: 5, hp: 4, attack: 2, range: 1, move: 3, name: "騎兵" },
   };
 
   const DIFFICULTIES = {
@@ -755,35 +755,134 @@
   function drawUnit(unit, enemy) {
     const px = BOARD_X + unit.x * CELL + 19;
     const py = BOARD_Y + unit.y * CELL + 19;
-    const bodyColors = {
-      Infantry: "#8f8f98",
-      Warrior: "#d7a83e",
-      Tank: "#9b733e",
-      Archer: "#3caac9",
-      Cavalry: "#a45bd0",
-    };
-    const teamColor = enemy ? "#e25353" : "#3f8ff0";
 
-    // チームカラーの外枠で、同じ種類でも自軍/敵軍を一目で判別できるようにする
-    ctx.fillStyle = teamColor;
+    // スクショで気に入ってもらった「大きなチームカラーの外装＋中央の機体」
+    // をベースにしつつ、ユニット種類ごとに中央の形だけ変える。
+    const teamColor = enemy ? "#e25353" : "#3f8ff0";
+    const teamDark = enemy ? "#9e3131" : "#2456a8";
+    const core = "#a8a8b0";
+    const coreDark = "#70717a";
+    const accent = "#e8edf6";
+
+    // チーム外装
+    ctx.fillStyle = teamDark;
     ctx.beginPath();
     ctx.arc(px, py, 18, 0, Math.PI * 2);
     ctx.fill();
 
-    ctx.fillStyle = bodyColors[unit.type];
-    if (unit.type === "Infantry") ctx.fillRect(px - 10, py - 10, 20, 20);
-    else if (unit.type === "Warrior") circle(px, py, 14);
-    else if (unit.type === "Tank") ctx.fillRect(px - 13, py - 13, 26, 26);
-    else if (unit.type === "Archer") {
+    ctx.fillStyle = teamColor;
+    ctx.beginPath();
+    ctx.arc(px, py, 16, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 種類ごとの中央ユニット
+    ctx.fillStyle = core;
+    ctx.strokeStyle = coreDark;
+    ctx.lineWidth = 2;
+
+    if (unit.type === "Infantry") {
+      // 盾型
       ctx.beginPath();
-      ctx.moveTo(px, py - 15);
-      ctx.lineTo(px + 14, py + 13);
-      ctx.lineTo(px - 14, py + 13);
+      ctx.moveTo(px, py - 11);
+      ctx.lineTo(px + 10, py - 5);
+      ctx.lineTo(px + 8, py + 7);
+      ctx.lineTo(px, py + 12);
+      ctx.lineTo(px - 8, py + 7);
+      ctx.lineTo(px - 10, py - 5);
       ctx.closePath();
       ctx.fill();
-    } else circle(px, py, 15);
+      ctx.stroke();
 
-    // 自軍は「青い右向きマーク」、敵軍は「赤い左向きマーク」
+    } else if (unit.type === "Warrior") {
+      // 円形コア＋剣
+      ctx.beginPath();
+      ctx.arc(px, py, 11, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.strokeStyle = accent;
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(px + 3, py - 7);
+      ctx.lineTo(px - 5, py + 5);
+      ctx.stroke();
+
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(px - 8, py + 7);
+      ctx.lineTo(px - 2, py + 2);
+      ctx.stroke();
+
+    } else if (unit.type === "Tank") {
+      // 重装甲＋砲塔
+      ctx.fillRect(px - 12, py - 9, 24, 18);
+      ctx.strokeRect(px - 12, py - 9, 24, 18);
+
+      ctx.fillStyle = coreDark;
+      ctx.fillRect(px - 6, py - 6, 12, 10);
+
+      ctx.strokeStyle = accent;
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(px + 2, py);
+      ctx.lineTo(px + 13, py);
+      ctx.stroke();
+
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(px - 9, py + 8);
+      ctx.lineTo(px + 9, py + 8);
+      ctx.stroke();
+
+    } else if (unit.type === "Archer") {
+      // 弓兵：三角コア＋弓
+      ctx.beginPath();
+      ctx.moveTo(px, py - 12);
+      ctx.lineTo(px + 10, py + 9);
+      ctx.lineTo(px - 10, py + 9);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.strokeStyle = accent;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(px - 2, py, 10, -1.15, 1.15);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(px + 2, py - 7);
+      ctx.lineTo(px + 2, py + 7);
+      ctx.stroke();
+
+    } else if (unit.type === "Cavalry") {
+      // 騎兵：ひし形のコア＋前方パーツ
+      ctx.beginPath();
+      ctx.moveTo(px, py - 12);
+      ctx.lineTo(px + 10, py);
+      ctx.lineTo(px, py + 12);
+      ctx.lineTo(px - 10, py);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = coreDark;
+      ctx.beginPath();
+      ctx.moveTo(px + 4, py - 6);
+      ctx.lineTo(px + 11, py - 1);
+      ctx.lineTo(px + 5, py + 5);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.strokeStyle = accent;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(px - 7, py + 8);
+      ctx.lineTo(px + 7, py + 8);
+      ctx.stroke();
+    }
+
+    // チーム方向マーカー
     ctx.fillStyle = teamColor;
     ctx.beginPath();
     if (enemy) {
@@ -798,23 +897,26 @@
     ctx.closePath();
     ctx.fill();
 
+    // 選択中の黄色枠
     if (unit === selected) {
       ctx.strokeStyle = "#ffdc46";
       ctx.lineWidth = 3;
       ctx.strokeRect(px - 20, py - 20, 40, 40);
     }
 
-    // 行動表示はユニット本体に重ならないよう、セルの下側へ移動
-    const moveColor = unit.moved ? "#666" : "#38b86a";
-    const attackReadyColor = unit.attacked ? "#666" : hasAttackableTarget(unit) ? "#e25555" : "#756a46";
-    drawMiniActionBadge(px - 9, py + 15, "移", moveColor);
-    drawMiniActionBadge(px + 9, py + 15, "攻", attackReadyColor);
+    // HPバー・「移」「攻」の位置は変更しない
+    drawMiniActionBadge(px - 9, py - 20, "移", unit.moved ? "#666" : "#38b86a");
+    const attackReadyColor = unit.attacked
+      ? "#666"
+      : hasAttackableTarget(unit)
+        ? "#e25555"
+        : "#756a46";
+    drawMiniActionBadge(px + 9, py - 20, "攻", attackReadyColor);
 
-    // HPバーはユニットの上に固定し、本体の形を隠さない
     ctx.fillStyle = "#202020";
-    ctx.fillRect(px - 17, py - 27, 34, 5);
+    ctx.fillRect(px - 17, py - 27, 34, 4);
     ctx.fillStyle = "#50d26b";
-    ctx.fillRect(px - 17, py - 27, 34 * Math.max(0, unit.hp / unit.maxHp), 5);
+    ctx.fillRect(px - 17, py - 27, 34 * Math.max(0, unit.hp / unit.maxHp), 4);
   }
 
   function drawTargetMarker(x, y) {
